@@ -1,0 +1,132 @@
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes slideIn {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      
+      .animate-fade-in {
+        animation: fadeIn 0.6s ease-out forwards;
+      }
+      
+      .animate-slide-in {
+        animation: slideIn 0.3s ease-out forwards;
+      }
+      
+      .animate-pulse-slow {
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      .sidebar-transition {
+        transition: all 0.3s ease;
+      }
+      
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      
+      .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+      
+      .gradient-bg {
+        background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+      }
+      
+      .gradient-text {
+        background: linear-gradient(135deg, #059669, #10b981);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      
+      .status-badge {
+        transition: all 0.3s ease;
+      }
+      
+      .status-badge:hover {
+        transform: scale(1.05);
+      }
+      
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #10b981;
+        border-radius: 10px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #059669;
+      }
+
+      .calendar-day {
+        transition: all 0.2s ease;
+        min-height: 60px;
+      }
+
+      .calendar-day:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        z-index: 10;
+      }
+
+      .calendar-day.has-event {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-weight: bold;
+      }
+
+      .calendar-day.today {
+        border: 3px solid #10b981;
+        font-weight: bold;
+        position: relative;
+      }
+
+      .calendar-day.today::after {
+        content: '●';
+        position: absolute;
+        bottom: 2px;
+        font-size: 8px;
+        color: #10b981;
+      }
+
+      .calendar-day.has-event.today {
+        border: 3px solid #fbbf24;
+      }
+
+      .calendar-day.has-event.today::after {
+        content: '●';
+        position: absolute;
+        bottom: 2px;
+        font-size: 8px;
+        color: #fbbf24;
+      }
+
+      .calendar-day .event-count {
+        font-size: 8px;
+        background: rgba(255,255,255,0.3);
+        padding: 0 6px;
+        border-radius: 10px;
+        margin-top: 2px;
+      }
+
+      .calendar-day.has-event .event-count {
+        background: rgba(255,255,255,0.4);
+      }
