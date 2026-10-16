@@ -203,15 +203,27 @@ const Login = () => {
     finally { setEnviando(false); }
   };
 
-  const entrarComGoogle = async () => {
-    setErro(''); setMensagem(''); setEnviando(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google', options: { redirectTo: 'https://analoliveira113-ctrl.github.io/Hospital-Sao-Dridri-MOBILE-APP-AULA-8/' }
-      });
-      if (error) throw error;
-    } catch (err) { setErro(err.message || 'Não foi possível iniciar o login com Google.'); setEnviando(false); }
-  };
+ 
+const entrarComGoogle = async () => {
+  setErro('');
+  setMensagem('');
+  setEnviando(true);
+
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://hospital-sao-dridri-mobile-app-aula-8.pages.dev/'
+      }
+    });
+
+    if (error) throw error;
+  } catch (err) {
+    setErro(err.message || 'Não foi possível iniciar o login com Google.');
+    setEnviando(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
