@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './services/supabaseClient';
+import { useAuth } from './context/AuthContext';
 // ==================== UTILITÁRIOS =================
 // ===
 const gerarId = () => Date.now() + Math.random() * 1000;
@@ -170,196 +171,74 @@ const CameraComponent = ({ onClose, onCapture }) => {
   );
 };
 
-// ==================== TELA DE LOGIN ====================
-const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [erro, setErro] = useState('');
+// ==================== LOGIN, CADASTRO E GOOGLE ====================
+const Login = () => {
   const [isCadastro, setIsCadastro] = useState(false);
   const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [erro, setErro] = useState('');
+  const [mensagem, setMensagem] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
-  const handleLogin = async (e) => {
-  e.preventDefault();
-  setErro('');
-
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('*')
-    .eq('email', email)
-    .eq('senha', senha)
-    .single();
-
-  if (error || !data) {
-    setErro('E-mail ou senha incorretos');
-    return;
-  }
-
-  onLogin(data);
-};
-
- const handleCadastro = async (e) => {
-  e.preventDefault();
-  setErro('');
-
-  if (!nome || !email || !senha || !confirmarSenha) {
-    setErro('Preencha todos os campos');
-    return;
-  }
-
-  if (senha !== confirmarSenha) {
-    setErro('As senhas não coincidem');
-    return;
-  }
-
-  if (senha.length < 6) {
-    setErro('A senha deve ter pelo menos 6 caracteres');
-    return;
-  }
-
-  const { data: usuarioExistente } = await supabase
-    .from('usuarios')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle();
-
-  if (usuarioExistente) {
-    setErro('Este e-mail já está cadastrado');
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from('usuarios')
-    .insert([
-      {
-        nome: nome,
-        email: email,
-        senha: senha,
-        tipo: 'admin'
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setErro(''); setMensagem('');
+    if (isCadastro && senha !== confirmarSenha) { setErro('As senhas não coincidem.'); return; }
+    if (senha.length < 6) { setErro('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    setEnviando(true);
+    try {
+      if (isCadastro) {
+        const { data, error } = await supabase.auth.signUp({
+          email, password: senha, options: { data: { full_name: nome } }
+        });
+        if (error) throw error;
+        if (data.session) setMensagem('Cadastro realizado! Você já está conectada.');
+        else setMensagem('Cadastro realizado! Confira seu e-mail para confirmar a conta antes de entrar.');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+        if (error) throw error;
       }
-    ])
-    .select()
-    .single();
+    } catch (err) { setErro(err.message || 'Não foi possível concluir a operação.'); }
+    finally { setEnviando(false); }
+  };
 
-  if (error) {
-    console.error('Erro ao cadastrar usuário:', error);
-    setErro('Não foi possível cadastrar o usuário');
-    return;
-  }
-
-  onLogin(data);
-};
+  const entrarComGoogle = async () => {
+    setErro(''); setMensagem(''); setEnviando(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google', options: { redirectTo: window.location.origin }
+      });
+      if (error) throw error;
+    } catch (err) { setErro(err.message || 'Não foi possível iniciar o login com Google.'); setEnviando(false); }
+  };
 
   return (
     <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-fade-in">
-        <div className="text-center mb-8">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fade-in">
+        <div className="text-center mb-7">
           <div className="w-20 h-20 rounded-full gradient-bg flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/30">
             <i className="fas fa-heartbeat text-white text-3xl"></i>
           </div>
           <h1 className="text-3xl font-bold text-gray-800">São Dridri</h1>
           <p className="text-gray-500 text-sm mt-1">Hospital & Clínica</p>
-          <p className="text-gray-400 text-xs mt-2">
-            {isCadastro ? 'Crie sua conta' : 'Faça login para acessar o sistema'}
-          </p>
+          <p className="text-gray-400 text-xs mt-2">{isCadastro ? 'Crie sua conta para continuar' : 'Entre para acessar o sistema'}</p>
         </div>
-
-        <form onSubmit={isCadastro ? handleCadastro : handleLogin} className="space-y-4">
-          {isCadastro && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome Completo
-              </label>
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                placeholder="Seu nome completo"
-                required
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              E-mail
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-              placeholder="seu@email.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Senha
-            </label>
-            <input
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-              placeholder={isCadastro ? 'Mínimo 6 caracteres' : '********'}
-              required
-            />
-          </div>
-
-          {isCadastro && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmar Senha
-              </label>
-              <input
-                type="password"
-                value={confirmarSenha}
-                onChange={(e) => setConfirmarSenha(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                placeholder="Digite novamente"
-                required
-              />
-            </div>
-          )}
-
-          {erro && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm flex items-center gap-2">
-              <i className="fas fa-exclamation-circle"></i>
-              {erro}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full gradient-bg text-white py-3 rounded-xl font-bold hover:scale-[1.02] transition-all shadow-lg shadow-emerald-500/30"
-          >
-            <i className={`fas fa-${isCadastro ? 'user-plus' : 'sign-in-alt'} mr-2`}></i>
-            {isCadastro ? 'Criar Conta' : 'Entrar'}
-          </button>
+        <button type="button" onClick={entrarComGoogle} disabled={enviando} className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl py-3 px-4 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60">
+          <span className="text-lg font-bold">G</span> Entrar com Google
+        </button>
+        <div className="flex items-center gap-3 my-5"><div className="h-px bg-gray-200 flex-1"></div><span className="text-xs text-gray-400">ou use seu e-mail</span><div className="h-px bg-gray-200 flex-1"></div></div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isCadastro && <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome completo</label><input type="text" value={nome} onChange={e=>setNome(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Seu nome completo" required /></div>}
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="voce@email.com" autoComplete="email" required /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Senha</label><input type="password" value={senha} onChange={e=>setSenha(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Mínimo 6 caracteres" autoComplete={isCadastro ? 'new-password' : 'current-password'} minLength={6} required /></div>
+          {isCadastro && <div><label className="block text-sm font-medium text-gray-700 mb-1">Confirmar senha</label><input type="password" value={confirmarSenha} onChange={e=>setConfirmarSenha(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Digite a senha novamente" minLength={6} required /></div>}
+          {erro && <div role="alert" className="bg-red-50 text-red-700 p-3 rounded-xl text-sm">{erro}</div>}
+          {mensagem && <div role="status" className="bg-emerald-50 text-emerald-700 p-3 rounded-xl text-sm">{mensagem}</div>}
+          <button type="submit" disabled={enviando} className="w-full gradient-bg text-white py-3 rounded-xl font-bold shadow-lg disabled:opacity-60">{enviando ? 'Aguarde...' : isCadastro ? 'Criar conta' : 'Entrar'}</button>
         </form>
-
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => {
-              setIsCadastro(!isCadastro);
-              setErro('');
-            }}
-            className="text-sm text-emerald-500 hover:text-emerald-700 transition-colors"
-          >
-            {isCadastro ? 'Já tem uma conta? Faça login' : 'Não tem conta? Cadastre-se'}
-          </button>
-        </div>
-
-        {!isCadastro && (
-          <div className="mt-2 text-center">
-            <p className="text-xs text-gray-400">
-              Credenciais padrão: admin@saodridri.com / admin123
-            </p>
-          </div>
-        )}
+        <div className="mt-5 text-center"><button type="button" onClick={()=>{setIsCadastro(!isCadastro);setErro('');setMensagem('');}} className="text-sm text-emerald-600 hover:text-emerald-800">{isCadastro ? 'Já tem uma conta? Faça login' : 'Não tem conta? Cadastre-se'}</button></div>
+        <p className="text-xs text-center text-gray-400 mt-5">Acesso protegido pelo Supabase Auth</p>
       </div>
     </div>
   );
@@ -1528,7 +1407,7 @@ const Calendario = ({ agendamentos, onAgendarClick }) => {
 // ==================== PAINEL PRINCIPAL ====================
 const App = () => {
     
-  const [usuario, setUsuario] = useState(null);
+  const { user: usuario, loadingSession, signOut } = useAuth();
   const [pacientes, setPacientes] = useState([]);
   const [agendamentos, setAgendamentos] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -1567,8 +1446,9 @@ const testarSupabasePacientes = async () => {
   console.log('Pacientes do Supabase:', data);
   console.log('Erro dos pacientes:', error);
 };
-  // Carregar dados do Supabase
+  // Carregar dados do Supabase somente após autenticação
 useEffect(() => {
+  if (!usuario) return;
 
   const carregarPacientes = async () => {
     const { data, error } = await supabase
@@ -1629,7 +1509,7 @@ carregarAgendamentos();
 
 carregarDocumentos();
 
-}, []);
+}, [usuario]);
 
   const showNotification = (message, type = 'success') => {
     setAlertMessage(message);
@@ -1918,13 +1798,17 @@ carregarDocumentos();
   };
 
   // Verificar se está logado
-  if (!usuario) {
-    return <Login onLogin={setUsuario} />;
+  if (loadingSession) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-gray-600">Verificando sua sessão...</p></div>;
   }
+  if (!usuario) return <Login />;
 
   return (
     <div className="min-h-screen bg-gray-50">
-        
+      <div className="md:ml-64 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-end gap-3">
+        {usuario?.user_metadata?.avatar_url && <img src={usuario.user_metadata.avatar_url} alt="Foto do perfil" className="w-9 h-9 rounded-full" />}
+        <div className="text-right"><p className="text-sm font-semibold text-gray-800">{usuario?.user_metadata?.full_name || usuario?.user_metadata?.name || 'Usuário'}</p><p className="text-xs text-gray-500">{usuario?.email}</p></div>
+      </div>
       {showCadastro && (
         <CadastroPacienteModal 
           onClose={() => setShowCadastro(false)}
@@ -2001,7 +1885,7 @@ carregarDocumentos();
         setActiveTab={setActiveTab} 
         isMobile={isMobile} 
         setIsMobile={setIsMobile}
-        onLogout={() => setUsuario(null)}
+        onLogout={async () => { try { await signOut(); } catch (error) { console.error("Erro ao sair:", error); } }}
       />
 
       {/* Header Mobile */}
@@ -2550,11 +2434,11 @@ carregarDocumentos();
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                    <input type="text" value={usuario?.nome || 'Administrador'} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-gray-50" disabled />
+                    <input type="text" value={usuario?.user_metadata?.full_name || usuario?.user_metadata?.name || 'Usuário'} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-gray-50" disabled />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-                    <input type="email" value={usuario?.email || 'admin@saodridri.com'} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-gray-50" disabled />
+                    <input type="email" value={usuario?.email || ''} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-gray-50" disabled />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Cargo</label>
