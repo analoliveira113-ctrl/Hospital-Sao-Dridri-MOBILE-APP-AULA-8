@@ -207,7 +207,7 @@ const Login = () => {
     setErro(''); setMensagem(''); setEnviando(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google', options: { redirectTo: window.location.origin }
+        provider: 'google', options: { redirectTo: 'https://analoliveira113-ctrl.github.io/Hospital-Sao-Dridri-MOBILE-APP-AULA-8/' }
       });
       if (error) throw error;
     } catch (err) { setErro(err.message || 'Não foi possível iniciar o login com Google.'); setEnviando(false); }

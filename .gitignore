@@ -6,3 +6,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Arquivos gerados pelo build Vite/Capacitor
+www/
